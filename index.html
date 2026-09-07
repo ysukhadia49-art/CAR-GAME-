@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VELOCITY RUSH — Bright & Colorful Arcade Racing</title>
+  <meta name="description" content="Velocity Rush is a vibrant, colorful, high-speed 3D arcade racing game with sunny tracks, cheerful circuits, and nitro boosts.">
+  <script type="module" crossorigin src="./index.js"></script>
+  <link rel="stylesheet" crossorigin href="./index.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- 3D WebGL Canvas -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- IN-GAME BRIGHT HUD -->
+    <div id="hud-overlay">
+      <div class="hud-top">
+        <div class="hud-panel">
+          <span class="hud-label">CURRENT LAP</span>
+          <div class="hud-value-large">
+            <span id="hud-lap">1</span> <span style="font-size: 20px; color: var(--text-muted);">/</span> <span id="hud-total-laps">3</span>
+          </div>
+          <span class="hud-sub" id="hud-lap-indicator">CHECKPOINT 0/3</span>
+        </div>
+
+        <!-- Dynamic Camera View Switcher Button -->
+        <button id="btn-camera-switch" class="hud-cam-btn" title="Cycle Camera Views (C / V keys)">
+          <span class="cam-icon">📷</span>
+          <span id="hud-cam-name">CHASE CAM</span>
+          <span class="cam-keys">[C / V]</span>
+        </button>
+
+        <div class="hud-panel" style="align-items: flex-end;">
+          <span class="hud-label">RACE TIME</span>
+          <div class="hud-value-large" id="hud-timer">00:00.00</div>
+          <span class="hud-sub" style="color: var(--orange);">BEST: <span id="hud-best-time">--:--.--</span></span>
+        </div>
+      </div>
+
+      <!-- Center Dynamic Toast Banner -->
+      <div id="hud-banner">CHECKPOINT 1/3!</div>
+
+      <!-- Countdown 3-2-1-GO Display -->
+      <div id="countdown-display">3</div>
+
+      <div class="hud-bottom">
+        <!-- Minimap Radar -->
+        <div class="minimap-container">
+          <canvas id="minimap-canvas" width="120" height="120"></canvas>
+          <span class="hud-label" style="margin-top: 6px;">TRACK RADAR</span>
+        </div>
+
+        <!-- Speed & Nitro Cluster -->
+        <div class="speedo-cluster">
+          <div class="speedo-gauge">
+            <div class="speedo-num" id="hud-speed">0</div>
+            <div class="speedo-unit">KM/H</div>
+          </div>
+
+          <div class="nitro-container">
+            <div class="nitro-header">
+              <span>⚡ NITRO BOOST</span>
+              <span id="hud-nitro-pct">100%</span>
+            </div>
+            <div class="nitro-track">
+              <div class="nitro-fill" id="hud-nitro-fill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN MENU SCREEN -->
+    <div id="menu-screen" class="screen-modal">
+      <div class="title-cluster">
+        <h1 class="main-title">VELOCITY RUSH</h1>
+        <div class="subtitle">☀️ SUNSHINE ARCADE RACING ☀️</div>
+      </div>
+
+      <div class="menu-buttons">
+        <button id="btn-menu-levels" class="btn btn-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          LEVELS (CAMPAIGN)
+        </button>
+        <button id="btn-menu-freeform" class="btn btn-garage">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          FREEFORM (OPEN RUN)
+        </button>
+        <button id="btn-garage" class="btn btn-secondary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+          GARAGE / CARS
+        </button>
+        <button id="btn-controls" class="btn btn-controls">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm8 7H9v-2h6v2zm1-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
+          CONTROLS
+        </button>
+        <button id="btn-settings" class="btn btn-settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          SETTINGS
+        </button>
+      </div>
+    </div>
+
+    <!-- LEVELS SELECTION SCREEN -->
+    <div id="levels-screen" class="screen-modal hidden">
+      <div class="title-cluster" style="margin-bottom: 24px;">
+        <h2 class="main-title" style="font-size: 46px;">CHAMPIONSHIP LEVELS</h2>
+        <div class="subtitle" style="font-size: 15px;">PASS EVERY CHECKPOINT & RACE TO THE FINISH</div>
+      </div>
+
+      <div class="level-grid" id="levels-grid-container">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div style="display: flex; gap: 16px; width: 340px;">
+        <button id="btn-launch-level" class="btn btn-primary" style="flex: 1;">PLAY LEVEL</button>
+        <button id="btn-levels-back" class="btn btn-secondary">BACK</button>
+      </div>
+    </div>
+
+    <!-- GARAGE / CAR SELECT SCREEN -->
+    <div id="garage-screen" class="screen-modal hidden">
+      <div class="garage-container">
+        <div class="car-list" id="car-list-container">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <div class="car-stats-panel">
+          <div>
+            <h2 id="garage-car-name" class="main-title" style="font-size: 32px; text-align: left; margin-bottom: 4px;">SOLAR FLASH</h2>
+            <div id="garage-car-tag" class="subtitle" style="text-align: left; font-size: 14px; margin-bottom: 24px; color: var(--orange);">Vibrant Flame Orange & High-Torque Acceleration</div>
+
+            <div class="stat-row">
+              <div class="stat-header">
+                <span>TOP SPEED</span>
+                <span id="stat-speed-val" style="color: var(--sky-blue);">215 KM/H</span>
+              </div>
+              <div class="stat-bar"><div id="stat-speed-fill" class="stat-bar-fill" style="width: 88%;"></div></div>
+            </div>
+
+            <div class="stat-row">
+              <div class="stat-header">
+                <span>ACCELERATION</span>
+                <span id="stat-accel-val" style="color: var(--orange);">85%</span>
+              </div>
+              <div class="stat-bar"><div id="stat-accel-fill" class="stat-bar-fill" style="width: 85%;"></div></div>
+            </div>
+
+            <div class="stat-row">
+              <div class="stat-header">
+                <span>HANDLING & DRIFT</span>
+                <span id="stat-handling-val" style="color: var(--green);">86%</span>
+              </div>
+              <div class="stat-bar"><div id="stat-handling-fill" class="stat-bar-fill" style="width: 86%;"></div></div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 14px; margin-top: 24px;">
+            <button id="btn-select-car" class="btn btn-primary" style="flex: 1;">CHOOSE LEVEL</button>
+            <button id="btn-garage-back" class="btn btn-secondary">BACK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAUSE MENU -->
+    <div id="pause-screen" class="screen-modal hidden">
+      <div class="dialog-box">
+        <h2 class="dialog-title">⏸️ GAME PAUSED</h2>
+        <div class="menu-buttons" style="width: 100%;">
+          <button id="btn-pause-resume" class="btn btn-primary">RESUME RACE</button>
+          <button id="btn-pause-restart" class="btn btn-garage">RESTART RACE</button>
+          <button id="btn-pause-settings" class="btn btn-settings">SETTINGS</button>
+          <button id="btn-pause-menu" class="btn btn-secondary">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROLS MODAL -->
+    <div id="controls-modal" class="screen-modal hidden">
+      <div class="dialog-box">
+        <h2 class="dialog-title">🎮 CONTROLS GUIDE</h2>
+        <div class="control-item">
+          <span>ACCELERATE</span>
+          <div><span class="key-badge">W</span> <span class="key-badge">↑</span></div>
+        </div>
+        <div class="control-item">
+          <span>BRAKE / REVERSE</span>
+          <div><span class="key-badge">S</span> <span class="key-badge">↓</span></div>
+        </div>
+        <div class="control-item">
+          <span>STEER LEFT / RIGHT</span>
+          <div><span class="key-badge">A / D</span> <span class="key-badge">← / →</span></div>
+        </div>
+        <div class="control-item">
+          <span>NITRO BOOST</span>
+          <span class="key-badge" style="background: #fef3c7; border-color: var(--orange); color: var(--orange);">SPACE</span>
+        </div>
+        <div class="control-item">
+          <span>CHANGE CAMERA (10 ANGLES)</span>
+          <div><span class="key-badge" style="background: #e0f2fe; border-color: var(--sky-blue); color: var(--sky-blue);">C</span> <span class="key-badge" style="background: #e0f2fe; border-color: var(--sky-blue); color: var(--sky-blue);">V</span></div>
+        </div>
+        <div class="control-item">
+          <span>RESET TO TRACK</span>
+          <span class="key-badge" style="background: #dcfce7; border-color: var(--green); color: var(--green);">R</span>
+        </div>
+        <div class="control-item">
+          <span>PAUSE / RESUME</span>
+          <span class="key-badge">ESC</span>
+        </div>
+        <button id="btn-controls-close" class="btn btn-primary" style="margin-top: 10px;">GOT IT</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="screen-modal hidden">
+      <div class="dialog-box">
+        <h2 class="dialog-title">⚙️ AUDIO & GAMEPLAY</h2>
+
+        <div class="setting-slider-group">
+          <div class="setting-label">
+            <span>SOUND EFFECTS (SFX)</span>
+            <span id="val-sfx" style="color: var(--sky-blue);">80%</span>
+          </div>
+          <input type="range" id="slider-sfx" min="0" max="100" value="80">
+        </div>
+
+        <div class="setting-slider-group">
+          <div class="setting-label">
+            <span>UPBEAT RACE MUSIC</span>
+            <span id="val-music" style="color: var(--purple);">55%</span>
+          </div>
+          <input type="range" id="slider-music" min="0" max="100" value="55">
+        </div>
+
+        <div class="setting-slider-group">
+          <div class="setting-label">
+            <span>STEERING SENSITIVITY</span>
+            <span id="val-sens" style="color: var(--green);">1.0x</span>
+          </div>
+          <input type="range" id="slider-sens" min="50" max="150" value="100">
+        </div>
+
+        <button id="btn-settings-close" class="btn btn-primary" style="margin-top: 10px;">SAVE & CLOSE</button>
+      </div>
+    </div>
+
+    <!-- RESULTS SCREEN -->
+    <div id="results-screen" class="screen-modal hidden">
+      <div class="result-box">
+        <div>
+          <div id="result-record-badge" class="result-badge">🏆 NEW RECORD! 🏆</div>
+          <h2 id="result-title" class="main-title" style="font-size: 38px; margin-top: 6px;">LEVEL COMPLETE!</h2>
+          <div id="result-stars" style="font-size: 22px; font-weight: 800; color: #f59e0b; margin-top: 6px;">⭐⭐⭐ MASTER</div>
+        </div>
+
+        <div>
+          <span class="hud-label" style="font-size: 13px;">FINAL TIME</span>
+          <div class="result-time-hero" id="result-total-time">00:39.50</div>
+        </div>
+
+        <table class="lap-table">
+          <tbody id="result-lap-list">
+            <!-- Dynamic lap rows -->
+          </tbody>
+        </table>
+
+        <div style="display: flex; gap: 14px; margin-top: 10px;">
+          <button id="btn-result-next" class="btn btn-primary" style="flex: 1;">NEXT LEVEL</button>
+          <button id="btn-result-retry" class="btn btn-garage" style="flex: 1;">RETRY</button>
+          <button id="btn-result-menu" class="btn btn-secondary">MENU</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
